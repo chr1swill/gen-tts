@@ -1,5 +1,5 @@
-#import torchaudio as ta
-#from chatterbox.tts import ChatterboxTTS
+import torchaudio as ta
+from chatterbox.tts import ChatterboxTTS
 import sys
 import re
 import os
@@ -56,7 +56,6 @@ if len(words) > BATCH_SIZE:
 
 else: jobs.append(words);
 
-# make the output dir accept it as one of the command line input
 TMPDIR="/tmp/tts_gen_6940";
 try: os.mkdir(TMPDIR);
 except:
@@ -71,12 +70,16 @@ except:
     exit(0);
 
 print(f"successfully created clean dir {TMPDIR}");
-exit(0)
 
+# pretty sure this does not need to be done it a loop
+# proably what is causing the memory leak
+# model = ChatterboxTTS.from_pretrained(device="cpu");
+# i don't see anything indecating i need to recreate it every time
+# so if this works this time after 9million hr i should take it out of the loop
 for i in range(len(jobs)):
   model = ChatterboxTTS.from_pretrained(device="cpu");
-  wav = model.generate(" ".join(job[i]));
-  ta.save(wavfilepath, wav, model.sr);
+  wav = model.generate(" ".join(jobs[i]));
+  ta.save("{}/{}.wav".format(TMPDIR, i), wav, model.sr);
 
 file.close();
 exit(0);
