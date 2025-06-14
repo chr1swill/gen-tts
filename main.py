@@ -1,5 +1,5 @@
-import torchaudio as ta
-from chatterbox.tts import ChatterboxTTS
+#import torchaudio as ta
+#from chatterbox.tts import ChatterboxTTS
 import sys
 import re
 
@@ -33,9 +33,35 @@ except:
 # arr = re.split("[?.!]", content);
 words = re.split(" ", content);
 
-model = ChatterboxTTS.from_pretrained(device="cpu");
-wav = model.generate(" ".join(words[:249]));
-ta.save(wavfilepath, wav, model.sr);
+#print(len(words));
+
+BATCH_SIZE=249
+WORDS_LEN=len(words)
+N_BATCH_SIZE_JOBS=round(WORDS_LEN/BATCH_SIZE)
+
+jobs = []
+for i in range(N_BATCH_SIZE_JOBS):
+  start=i*BATCH_SIZE
+  end=(i*BATCH_SIZE)+BATCH_SIZE
+  #print(f"{WORDS_LEN}>{start}:{end}::{end - start}");
+  #print(" ".join(words[start:end]));
+  jobs.append(" ".join(words[start:end]));
+
+# empty out the remaining bit that is less that a full batch
+# but has still not been processed
+if N_BATCH_SIZE_JOBS is not WORDS_LEN / BATCH_SIZE:
+  start=N_BATCH_SIZE_JOBS*BATCH_SIZE
+  end=WORDS_LEN
+  #print(f"{WORDS_LEN}>{start}:{end}::{end - start}");
+  #print(" ".join(words[start:end]));
+  jobs.append(" ".join(words[start:end]));
+  assert(len(jobs) == N_BATCH_SIZE_JOBS + 1);
+
+else:  assert(len(jobs) == N_BATCH_SIZE_JOBS);
+
+#model = ChatterboxTTS.from_pretrained(device="cpu");
+#wav = model.generate(" ".join(words[:249]));
+#ta.save(wavfilepath, wav, model.sr);
 
 file.close();
 exit(0);
