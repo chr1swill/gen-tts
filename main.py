@@ -2,6 +2,7 @@
 #from chatterbox.tts import ChatterboxTTS
 import sys
 import re
+import os
 
 textfilepath="";
 wavfilepath="";
@@ -33,35 +34,49 @@ except:
 # arr = re.split("[?.!]", content);
 words = re.split(" ", content);
 
-#print(len(words));
-
 BATCH_SIZE=249
 WORDS_LEN=len(words)
 N_BATCH_SIZE_JOBS=round(WORDS_LEN/BATCH_SIZE)
 
 jobs = []
-for i in range(N_BATCH_SIZE_JOBS):
-  start=i*BATCH_SIZE
-  end=(i*BATCH_SIZE)+BATCH_SIZE
-  #print(f"{WORDS_LEN}>{start}:{end}::{end - start}");
-  #print(" ".join(words[start:end]));
-  jobs.append(" ".join(words[start:end]));
 
-# empty out the remaining bit that is less that a full batch
-# but has still not been processed
-if N_BATCH_SIZE_JOBS is not WORDS_LEN / BATCH_SIZE:
-  start=N_BATCH_SIZE_JOBS*BATCH_SIZE
-  end=WORDS_LEN
-  #print(f"{WORDS_LEN}>{start}:{end}::{end - start}");
-  #print(" ".join(words[start:end]));
-  jobs.append(" ".join(words[start:end]));
-  assert(len(jobs) == N_BATCH_SIZE_JOBS + 1);
+if len(words) > BATCH_SIZE:
+  for i in range(N_BATCH_SIZE_JOBS):
+    start=i*BATCH_SIZE
+    end=(i*BATCH_SIZE)+BATCH_SIZE
+    jobs.append(" ".join(words[start:end]));
 
-else:  assert(len(jobs) == N_BATCH_SIZE_JOBS);
+  if N_BATCH_SIZE_JOBS is not WORDS_LEN / BATCH_SIZE:
+    start=N_BATCH_SIZE_JOBS*BATCH_SIZE
+    end=WORDS_LEN
+    jobs.append(" ".join(words[start:end]));
+    assert(len(jobs) == N_BATCH_SIZE_JOBS + 1);
 
-#model = ChatterboxTTS.from_pretrained(device="cpu");
-#wav = model.generate(" ".join(words[:249]));
-#ta.save(wavfilepath, wav, model.sr);
+  else:  assert(len(jobs) == N_BATCH_SIZE_JOBS);
+
+else: jobs.append(words);
+
+# make the output dir accept it as one of the command line input
+TMPDIR="/tmp/tts_gen_6940";
+try: os.mkdir(TMPDIR);
+except:
+  try: os.rmdir(TMPDIR);
+  except:
+    print(f"failed to rmdir: {TMPDIR}");
+    exit(1);
+
+  try: os.mkdir(TMPDIR);
+  except:
+    print(f"failed to mkdir: {TMPDIR}");
+    exit(0);
+
+print(f"successfully created clean dir {TMPDIR}");
+exit(0)
+
+for i in range(len(jobs)):
+  model = ChatterboxTTS.from_pretrained(device="cpu");
+  wav = model.generate(" ".join(job[i]));
+  ta.save(wavfilepath, wav, model.sr);
 
 file.close();
 exit(0);
